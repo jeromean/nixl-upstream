@@ -600,7 +600,8 @@ nixlLibfabricTopology::buildTopologyAwareGrouping() {
         hwloc_obj_t hwloc_node =
             hwloc_get_pcidev_by_busid(hwloc_topology, domain_id, bus_id, device_id, function_id);
 
-        if ((hwloc_node) && (libfabric_name != "mlx5_2")) {
+        const std::string skip_nic = "mlx5_2";
+            if ((hwloc_node) && (libfabric_name != skip_nic)) {
             NicInfo nic;
             nic.libfabric_name = libfabric_name;
             nic.hwloc_node = hwloc_node;
@@ -608,6 +609,7 @@ nixlLibfabricTopology::buildTopologyAwareGrouping() {
             nic.bus_id = bus_id;
             nic.device_id = device_id;
             nic.function_id = function_id;
+            NIXL_DEBUG << "libfabric_name " << libfabric_name;
             discovered_nics.push_back(nic);
             NIXL_DEBUG << "    Successfully correlated NIC: " << pcie_addr << " → " << libfabric_name;
         } else {
