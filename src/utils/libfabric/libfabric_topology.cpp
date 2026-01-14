@@ -600,8 +600,7 @@ nixlLibfabricTopology::buildTopologyAwareGrouping() {
         hwloc_obj_t hwloc_node =
             hwloc_get_pcidev_by_busid(hwloc_topology, domain_id, bus_id, device_id, function_id);
 
-        const std::string skip_nic = "mlx5_2";
-            if ((hwloc_node) && (libfabric_name != skip_nic)) {
+        if (hwloc_node) {
             NicInfo nic;
             nic.libfabric_name = libfabric_name;
             nic.hwloc_node = hwloc_node;
