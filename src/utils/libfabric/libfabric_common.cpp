@@ -162,7 +162,7 @@ getAvailableNetworkDevices() {
             std::string device_name = cur->domain_attr->name;
             std::string provider_name = cur->fabric_attr->prov_name;
 
-            NIXL_TRACE << "Found device - domain: " << device_name
+            NIXL_DEBUG << "Found device - domain: " << device_name
                        << ", provider: " << provider_name << ", ep_type: " << cur->ep_attr->type
                        << ", caps: 0x" << std::hex << cur->caps << std::dec;
 
@@ -178,7 +178,7 @@ getAvailableNetworkDevices() {
 
     for (auto device_list : provider_device_map) {
         for (auto device : device_list.second) {
-            NIXL_TRACE << "Provider: " << device_list.first << ", Device: " << device;
+            NIXL_DEBUG << "Provider: " << device_list.first << ", Device: " << device;
         }
     }
 

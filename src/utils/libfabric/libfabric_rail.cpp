@@ -79,7 +79,7 @@ RequestPool::release(nixlLibfabricReq *req) const {
         return;
     }
 
-    NIXL_TRACE << "ReleaseReq on Rail " << rail_id_ << " releasing request XFER_ID=" << req->xfer_id
+    NIXL_DEBUG << "ReleaseReq on Rail " << rail_id_ << " releasing request XFER_ID=" << req->xfer_id
                << " pool_index=" << req->pool_index;
 
     req->in_use = false;
@@ -114,7 +114,7 @@ RequestPool::findByContext(void *context) const {
     // we can directly cast the context pointer to the request pointer
     nixlLibfabricReq *req = reinterpret_cast<nixlLibfabricReq *>(context);
 
-    NIXL_TRACE << "From context the request xfer_id is : " << req->xfer_id;
+    NIXL_DEBUG << "From context the request xfer_id is : " << req->xfer_id;
     return req;
 }
 
@@ -330,7 +330,7 @@ ControlRequestPool::allocate(size_t needed_size) {
         // to set buffer_size to the actual message size for libfabric operations
         req->buffer_size = needed_size;
 
-        NIXL_TRACE << "Allocate on Rail " << rail_id_
+        NIXL_DEBUG << "Allocate on Rail " << rail_id_
                    << " allocated control request XFER_ID=" << req->xfer_id
                    << " buffer_size=" << req->buffer_size;
     } else {
@@ -414,7 +414,7 @@ nixlLibfabricRail::nixlLibfabricRail(const std::string &device,
     memset(ep_name, 0, sizeof(ep_name));
 
     // Initialize all Libfabric resources for this rail
-    NIXL_TRACE << "Initializing rail " << rail_id << " with device: " << device_name
+    NIXL_DEBUG << "Initializing rail " << rail_id << " with device: " << device_name
                << ", provider: " << provider;
 
     // Initialize hints for this rail
@@ -475,7 +475,7 @@ nixlLibfabricRail::nixlLibfabricRail(const std::string &device,
             NIXL_INFO << "fi_cq_open failed for rail " << rail_id << ": " << fi_strerror(-ret)
                       << " - trying FI_WAIT_NONE for " << info->fabric_attr->name << " provider";
             if (ret == -FI_ENOSYS) {
-                NIXL_TRACE << "FI_WAIT_UNSPEC not supported, falling back to FI_WAIT_NONE for rail "
+                NIXL_DEBUG << "FI_WAIT_UNSPEC not supported, falling back to FI_WAIT_NONE for rail "
                            << rail_id;
                 blocking_cq_sread_supported = false;
                 // If fi_cq_open fails due to FI_WAIT_UNSPEC not supported, we fall back to
@@ -488,7 +488,7 @@ nixlLibfabricRail::nixlLibfabricRail(const std::string &device,
                     throw std::runtime_error("fi_cq_open with FI_WAIT_NONE failed for rail " +
                                              std::to_string(rail_id));
                 }
-                NIXL_TRACE << "fi_cq_open with FI_WAIT_NONE succeeded for rail " << rail_id;
+                NIXL_DEBUG << "fi_cq_open with FI_WAIT_NONE succeeded for rail " << rail_id;
             } else {
                 throw std::runtime_error("fi_cq_open failed for rail " + std::to_string(rail_id));
             }
@@ -571,7 +571,7 @@ nixlLibfabricRail::nixlLibfabricRail(const std::string &device,
                                      std::to_string(rail_id));
         }
 
-        NIXL_TRACE << "Initialized request pools: " << NIXL_LIBFABRIC_CONTROL_REQUESTS_PER_RAIL
+        NIXL_DEBUG << "Initialized request pools: " << NIXL_LIBFABRIC_CONTROL_REQUESTS_PER_RAIL
                    << " control requests, " << NIXL_LIBFABRIC_DATA_REQUESTS_PER_RAIL
                    << " data requests for rail " << rail_id;
 
@@ -589,7 +589,7 @@ nixlLibfabricRail::nixlLibfabricRail(const std::string &device,
             throw std::runtime_error("Failed to post initial receive on rail " +
                                      std::to_string(rail_id));
         }
-        NIXL_TRACE << "Successfully initialized rail " << rail_id;
+        NIXL_DEBUG << "Successfully initialized rail " << rail_id;
     }
     catch (...) {
         fi_freeinfo(hints);
@@ -609,11 +609,11 @@ nixlLibfabricRail::isProperlyInitialized() const {
 
 void
 nixlLibfabricRail::cleanup() {
-    NIXL_TRACE << "Starting cleanup for rail " << rail_id;
+    NIXL_DEBUG << "Starting cleanup for rail " << rail_id;
 
     // STEP 1: Close endpoint first to stop any new operations
     if (endpoint) {
-        NIXL_TRACE << "Closing endpoint for rail " << rail_id;
+        NIXL_DEBUG << "Closing endpoint for rail " << rail_id;
         int ret = fi_close(&endpoint->fid);
         if (ret) {
             NIXL_WARN << "fi_close endpoint failed for rail " << rail_id << ": "
@@ -624,7 +624,7 @@ nixlLibfabricRail::cleanup() {
 
     // STEP 2: Close CQ after endpoint
     if (cq) {
-        NIXL_TRACE << "Closing completion queue for rail " << rail_id;
+        NIXL_DEBUG << "Closing completion queue for rail " << rail_id;
         int ret = fi_close(&cq->fid);
         if (ret) {
             NIXL_WARN << "fi_close cq failed for rail " << rail_id << ": " << fi_strerror(-ret);
@@ -633,7 +633,7 @@ nixlLibfabricRail::cleanup() {
     }
 
     if (av) {
-        NIXL_TRACE << "Closing address vector for rail " << rail_id;
+        NIXL_DEBUG << "Closing address vector for rail " << rail_id;
         int ret = fi_close(&av->fid);
         if (ret) {
             NIXL_WARN << "fi_close av failed for rail " << rail_id << ": " << fi_strerror(-ret);
@@ -643,11 +643,11 @@ nixlLibfabricRail::cleanup() {
 
     // STEP 3: Clean up request pools while domain is still valid
     // This ensures all memory registrations (MRs) are properly deregistered before domain closure
-    NIXL_TRACE << "Cleaning up request pools for rail " << rail_id;
+    NIXL_DEBUG << "Cleaning up request pools for rail " << rail_id;
     control_request_pool_.cleanup();
     // STEP 4: Close domain AFTER all MRs, endpoint, CQ, AV are closed
     if (domain) {
-        NIXL_TRACE << "Closing domain for rail " << rail_id;
+        NIXL_DEBUG << "Closing domain for rail " << rail_id;
         int ret = fi_close(&domain->fid);
         if (ret) {
             NIXL_WARN << "fi_close domain failed for rail " << rail_id << ": " << fi_strerror(-ret);
@@ -656,7 +656,7 @@ nixlLibfabricRail::cleanup() {
     }
     // STEP 5: Close fabric
     if (fabric) {
-        NIXL_TRACE << "Closing fabric for rail " << rail_id;
+        NIXL_DEBUG << "Closing fabric for rail " << rail_id;
         int ret = fi_close(&fabric->fid);
         if (ret) {
             NIXL_WARN << "fi_close fabric failed for rail " << rail_id << ": " << fi_strerror(-ret);
@@ -669,7 +669,7 @@ nixlLibfabricRail::cleanup() {
         fi_freeinfo(info);
         info = nullptr;
     }
-    NIXL_TRACE << "Cleanup completed for rail " << rail_id;
+    NIXL_DEBUG << "Cleanup completed for rail " << rail_id;
 }
 
 void
@@ -743,7 +743,7 @@ nixlLibfabricRail::progressCompletionQueue(bool use_blocking) const {
     }
 
     if (ret == 1) {
-        NIXL_TRACE << "Completion received on rail " << rail_id << " flags: " << std::hex
+        NIXL_DEBUG << "Completion received on rail " << rail_id << " flags: " << std::hex
                    << completion.flags << " data: " << completion.data
                    << " context: " << completion.op_context << std::dec;
 
@@ -766,7 +766,7 @@ nixl_status_t
 nixlLibfabricRail::processCompletionQueueEntry(struct fi_cq_data_entry *comp) const {
     uint64_t flags = comp->flags;
 
-    NIXL_TRACE << "Routing completion from rail " << rail_id << " with flags: " << std::hex << flags
+    NIXL_DEBUG << "Routing completion from rail " << rail_id << " with flags: " << std::hex << flags
                << " FI_SEND: " << (flags & FI_SEND) << " FI_RECV: " << (flags & FI_RECV)
                << " FI_WRITE: " << (flags & FI_WRITE)
                << " FI_REMOTE_WRITE: " << (flags & FI_REMOTE_WRITE) << std::dec;
@@ -838,9 +838,9 @@ nixlLibfabricRail::processLocalSendCompletion(struct fi_cq_data_entry *comp) con
     if (req && req->in_use) { // Only process if request is still valid and in use
         // Call completion callback if it exists
         if (req->completion_callback) {
-            NIXL_TRACE << "Calling completion callback for send request " << req->xfer_id;
+            NIXL_DEBUG << "Calling completion callback for send request " << req->xfer_id;
             req->completion_callback();
-            NIXL_TRACE << "Completion callback completed for send";
+            NIXL_DEBUG << "Completion callback completed for send";
         }
         releaseRequest(req);
     } else if (req && !req->in_use) {
@@ -864,10 +864,10 @@ nixlLibfabricRail::processLocalTransferCompletion(struct fi_cq_data_entry *comp,
     if (req && req->in_use) { // Only process if request is still valid and in use
         // Call completion callback if it exists
         if (req->completion_callback) {
-            NIXL_TRACE << "Calling completion callback for " << operation_type << " request "
+            NIXL_DEBUG << "Calling completion callback for " << operation_type << " request "
                        << req->xfer_id;
             req->completion_callback();
-            NIXL_TRACE << "Completion callback completed for " << operation_type;
+            NIXL_DEBUG << "Completion callback completed for " << operation_type;
         }
         releaseRequest(req);
     } else if (req && !req->in_use) {
@@ -895,11 +895,11 @@ nixlLibfabricRail::processRecvCompletion(struct fi_cq_data_entry *comp) const {
     uint64_t msg_type = NIXL_GET_MSG_TYPE_FROM_IMM(comp->data);
     uint16_t agent_idx = NIXL_GET_AGENT_INDEX_FROM_IMM(comp->data);
     uint32_t xfer_id = NIXL_GET_XFER_ID_FROM_IMM(comp->data);
-    NIXL_TRACE << "Received control message type " << msg_type << " agent_idx=" << agent_idx
+    NIXL_DEBUG << "Received control message type " << msg_type << " agent_idx=" << agent_idx
                << " XFER_ID=" << xfer_id << " imm_data=0x" << std::hex << comp->data << std::dec;
 
     if (msg_type == NIXL_LIBFABRIC_MSG_CONNECT) {
-        NIXL_TRACE << "Processing connection request on rail " << rail_id
+        NIXL_DEBUG << "Processing connection request on rail " << rail_id
                    << " Xfer_id :" << xfer_id;
         // Use callback to handle connection request processing
         if (connectionReqCallback) {
@@ -910,42 +910,42 @@ nixlLibfabricRail::processRecvCompletion(struct fi_cq_data_entry *comp) const {
                 NIXL_ERROR << "Connection request callback failed";
                 return callback_status;
             }
-            NIXL_TRACE << "Connection request processed via callback for rail " << rail_id;
+            NIXL_DEBUG << "Connection request processed via callback for rail " << rail_id;
         } else {
             NIXL_ERROR << "No connection request callback set for rail " << rail_id;
             return NIXL_ERR_BACKEND;
         }
     } else if (msg_type == NIXL_LIBFABRIC_MSG_ACK) {
-        NIXL_TRACE << "Processing connect request acknowledgement on rail " << rail_id;
+        NIXL_DEBUG << "Processing connect request acknowledgement on rail " << rail_id;
         // Notify engine that connection is established via callback
         // TODO: validate the current state before calling callback
         if (connectionAckCallback) {
             connectionAckCallback(agent_idx, nullptr, ConnectionState::CONNECTED);
-            NIXL_TRACE << "Connection state updated to CONNECTED via callback for rail " << rail_id;
+            NIXL_DEBUG << "Connection state updated to CONNECTED via callback for rail " << rail_id;
         } else {
             NIXL_ERROR << "No connection state callback set for rail " << rail_id;
             return NIXL_ERR_BACKEND;
         }
     } else if (msg_type == NIXL_LIBFABRIC_MSG_NOTIFICTION) {
-        NIXL_TRACE << "Processing notification request on rail " << rail_id
+        NIXL_DEBUG << "Processing notification request on rail " << rail_id
                    << " Xfer_id :" << xfer_id;
 
         // Create string from received buffer using the actual received length from completion entry
         std::string message(static_cast<char *>(req->buffer), comp->len);
 
-        NIXL_TRACE << "Adding message: " << message << " to the notification list on rail "
+        NIXL_DEBUG << "Adding message: " << message << " to the notification list on rail "
                    << rail_id;
 
         // Call engine's callback to store notification in central storage (like reference)
         if (notificationCallback) {
             notificationCallback(message);
-            NIXL_TRACE << "Notification stored via callback";
+            NIXL_DEBUG << "Notification stored via callback";
         } else {
             NIXL_ERROR << "No notification callback set!";
             return NIXL_ERR_BACKEND;
         }
     } else if (msg_type == NIXL_LIBFABRIC_MSG_DISCONNECT) {
-        NIXL_TRACE << "Processing disconnect request from agent " << agent_idx << " on rail "
+        NIXL_DEBUG << "Processing disconnect request from agent " << agent_idx << " on rail "
                    << rail_id
                    << "Currently not tracking the fi_addrs, so no callback for disconnect to clean "
                       "up libfabric AV list";
@@ -985,14 +985,14 @@ nixlLibfabricRail::processRemoteWriteCompletion(struct fi_cq_data_entry *comp) c
     // For remote write completions, we don't need to post a new receive
     // The write operation doesn't consume a receive buffer
     if (msg_type == NIXL_LIBFABRIC_MSG_TRANSFER) {
-        NIXL_TRACE << "Remote write completion on rail " << rail_id << " - received " << comp->len
+        NIXL_DEBUG << "Remote write completion on rail " << rail_id << " - received " << comp->len
                    << " bytes" << " agent_idx=" << agent_idx << " XFER_ID=" << xfer_id
                    << " imm_data=0x" << std::hex << comp->data << std::dec;
 
         // Call XFER_ID tracking callback to add received XFER_ID to global set
         if (xferIdCallback) {
             xferIdCallback(comp->data);
-            NIXL_TRACE << "Called XFER_ID callback for XFER_ID " << xfer_id;
+            NIXL_DEBUG << "Called XFER_ID callback for XFER_ID " << xfer_id;
         } else {
             NIXL_ERROR << "No XFER_ID callback set for rail " << rail_id;
             return NIXL_ERR_BACKEND;
@@ -1025,7 +1025,7 @@ nixlLibfabricRail::postRecv(nixlLibfabricReq *req) const {
     msg.context = &req->ctx; // Use request's context directly
     msg.data = 0;
 
-    NIXL_TRACE << "Posting receive on endpoint: " << endpoint << " buffer: " << req->buffer
+    NIXL_DEBUG << "Posting receive on endpoint: " << endpoint << " buffer: " << req->buffer
                << " size: " << req->buffer_size << " context: " << &req->ctx;
 
     int ret = fi_recvmsg(endpoint, &msg, 0);
@@ -1034,7 +1034,7 @@ nixlLibfabricRail::postRecv(nixlLibfabricReq *req) const {
         return NIXL_ERR_BACKEND;
     }
 
-    NIXL_TRACE << "Receive posted successfully";
+    NIXL_DEBUG << "Receive posted successfully";
     return NIXL_SUCCESS;
 }
 
@@ -1051,7 +1051,7 @@ nixlLibfabricRail::postSend(uint64_t immediate_data,
     // Prepare descriptor
     void *desc = fi_mr_desc(req->mr);
 
-    NIXL_TRACE << "Sending data on endpoint: " << endpoint << " buffer: " << req->buffer
+    NIXL_DEBUG << "Sending data on endpoint: " << endpoint << " buffer: " << req->buffer
                << " size: " << req->buffer_size << " immediate_data: " << std::hex << immediate_data
                << " msg_type: " << NIXL_GET_MSG_TYPE_FROM_IMM(immediate_data)
                << " agent_idx: " << NIXL_GET_AGENT_INDEX_FROM_IMM(immediate_data)
@@ -1069,7 +1069,7 @@ nixlLibfabricRail::postSend(uint64_t immediate_data,
 
         if (ret == 0) {
             // Success
-            NIXL_TRACE << "Send posted successfully"
+            NIXL_DEBUG << "Send posted successfully"
                        << (attempt > 0 ? " after " + std::to_string(attempt + 1) + " attempts" :
                                          "");
             return NIXL_SUCCESS;
@@ -1084,7 +1084,7 @@ nixlLibfabricRail::postSend(uint64_t immediate_data,
                 NIXL_INFO << "fi_senddata still retrying EAGAIN on rail " << rail_id << " after "
                           << attempt << " attempts";
             } else {
-                NIXL_TRACE << "fi_senddata returned EAGAIN on rail " << rail_id
+                NIXL_DEBUG << "fi_senddata returned EAGAIN on rail " << rail_id
                            << ", retrying (attempt " << attempt << ")";
             }
 
@@ -1095,7 +1095,7 @@ nixlLibfabricRail::postSend(uint64_t immediate_data,
             // Progress completion queue to drain pending completions before retry
             nixl_status_t progress_status = progressCompletionQueue(false);
             if (progress_status == NIXL_SUCCESS) {
-                NIXL_TRACE << "Progressed completions on rail " << rail_id << " before retry";
+                NIXL_DEBUG << "Progressed completions on rail " << rail_id << " before retry";
             }
 
             usleep(delay_us);
@@ -1125,7 +1125,7 @@ nixlLibfabricRail::postWrite(const void *local_buffer,
         return NIXL_ERR_INVALID_PARAM;
     }
 
-    NIXL_TRACE << "Posting RDMA write on endpoint: " << std::hex << endpoint
+    NIXL_DEBUG << "Posting RDMA write on endpoint: " << std::hex << endpoint
                << " local_buffer: " << local_buffer << " length: " << length
                << " immediate_data: " << immediate_data << " dest_addr: " << dest_addr
                << " remote_addr: " << (void *)remote_addr << " remote_key: " << remote_key
@@ -1149,7 +1149,7 @@ nixlLibfabricRail::postWrite(const void *local_buffer,
 
         if (ret == 0) {
             // Success
-            NIXL_TRACE << "RDMA write posted successfully"
+            NIXL_DEBUG << "RDMA write posted successfully"
                        << (attempt > 0 ? " after " + std::to_string(attempt + 1) + " attempts" :
                                          "");
             return NIXL_SUCCESS;
@@ -1164,7 +1164,7 @@ nixlLibfabricRail::postWrite(const void *local_buffer,
                 NIXL_INFO << "fi_writedata still retrying EAGAIN on rail " << rail_id << " after "
                           << attempt << " attempts";
             } else {
-                NIXL_TRACE << "fi_writedata returned EAGAIN on rail " << rail_id
+                NIXL_DEBUG << "fi_writedata returned EAGAIN on rail " << rail_id
                            << ", retrying (attempt " << attempt << ")";
             }
 
@@ -1175,7 +1175,7 @@ nixlLibfabricRail::postWrite(const void *local_buffer,
             // Progress completion queue to drain pending completions before retry
             nixl_status_t progress_status = progressCompletionQueue(false);
             if (progress_status == NIXL_SUCCESS) {
-                NIXL_TRACE << "Progressed completions on rail " << rail_id << " before retry";
+                NIXL_DEBUG << "Progressed completions on rail " << rail_id << " before retry";
             }
 
             usleep(delay_us);
@@ -1204,7 +1204,7 @@ nixlLibfabricRail::postRead(void *local_buffer,
         return NIXL_ERR_INVALID_PARAM;
     }
 
-    NIXL_TRACE << "Posting RDMA read on endpoint: " << std::hex << endpoint
+    NIXL_DEBUG << "Posting RDMA read on endpoint: " << std::hex << endpoint
                << " local_buffer: " << local_buffer << " length: " << length
                << " dest_addr: " << dest_addr << " remote_addr: " << (void *)remote_addr
                << " remote_key: " << remote_key << " context: " << &req->ctx;
@@ -1226,7 +1226,7 @@ nixlLibfabricRail::postRead(void *local_buffer,
 
         if (ret == 0) {
             // Success
-            NIXL_TRACE << "RDMA read posted successfully"
+            NIXL_DEBUG << "RDMA read posted successfully"
                        << (attempt > 0 ? " after " + std::to_string(attempt + 1) + " attempts" :
                                          "");
             return NIXL_SUCCESS;
@@ -1241,7 +1241,7 @@ nixlLibfabricRail::postRead(void *local_buffer,
                 NIXL_INFO << "fi_read still retrying EAGAIN on rail " << rail_id << " after "
                           << attempt << " attempts";
             } else {
-                NIXL_TRACE << "fi_read returned EAGAIN on rail " << rail_id
+                NIXL_DEBUG << "fi_read returned EAGAIN on rail " << rail_id
                            << ", retrying (attempt " << attempt << ")";
             }
 
@@ -1252,7 +1252,7 @@ nixlLibfabricRail::postRead(void *local_buffer,
             // Progress completion queue to drain pending completions before retry
             nixl_status_t progress_status = progressCompletionQueue(false);
             if (progress_status == NIXL_SUCCESS) {
-                NIXL_TRACE << "Progressed completions on rail " << rail_id << " before retry";
+                NIXL_DEBUG << "Progressed completions on rail " << rail_id << " before retry";
             }
 
             usleep(delay_us);
@@ -1354,7 +1354,7 @@ nixlLibfabricRail::registerMemory(void *buffer,
             NIXL_DEBUG << "Using CUDA HMEM interface for memory registration on rail " << rail_id
                        << " device_id=" << device_id;
 
-            NIXL_TRACE << "HMEM Registration: rail=" << rail_id << " provider=" << provider_name
+            NIXL_DEBUG << "HMEM Registration: rail=" << rail_id << " provider=" << provider_name
                        << " buffer=" << buffer << " length=" << length << " iface=" << mr_attr.iface
                        << " device_id=" << device_id
                        << " access_flags=0x" << std::hex << provider_access_flags << std::dec;
@@ -1399,7 +1399,7 @@ nixlLibfabricRail::registerMemory(void *buffer,
                        << buffer << " on rail " << rail_id;
         }
 
-        NIXL_TRACE << "GDR Memory Registration: rail=" << rail_id << " provider=" << provider_name
+        NIXL_DEBUG << "GDR Memory Registration: rail=" << rail_id << " provider=" << provider_name
                    << " buffer=" << buffer << " length=" << length << " access_flags=0x" << std::hex
                    << provider_access_flags << std::dec << " requested_key=" << requested_key;
 
@@ -1415,7 +1415,7 @@ nixlLibfabricRail::registerMemory(void *buffer,
     *mr_out = mr;
     *key_out = fi_mr_key(mr);
 
-    NIXL_TRACE << "Memory Registration SUCCESS: rail=" << rail_id << " provider=" << provider_name
+    NIXL_DEBUG << "Memory Registration SUCCESS: rail=" << rail_id << " provider=" << provider_name
                << " buffer=" << buffer << " length=" << length << " mr=" << mr
                << " key=" << *key_out << " registered_range=[" << buffer << " - "
                << (void *)((char *)buffer + length) << "]";

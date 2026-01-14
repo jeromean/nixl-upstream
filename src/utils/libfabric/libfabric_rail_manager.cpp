@@ -651,7 +651,7 @@ nixlLibfabricRailManager::progressActiveDataRails() {
     }
 
     if (any_completions) {
-        NIXL_TRACE << "Processed " << rails_to_process.size() << " active rails, completions found";
+        NIXL_DEBUG << "Processed " << rails_to_process.size() << " active rails, completions found";
     }
 
     return any_completions ? NIXL_SUCCESS : NIXL_IN_PROG;
@@ -864,7 +864,7 @@ nixlLibfabricRailManager::markRailActive(size_t rail_id) {
         NIXL_DEBUG << "Marked rail " << rail_id
                    << " as active (total active: " << active_rails_.size() << ")";
     } else {
-        NIXL_TRACE << "Rail " << rail_id << " was already active";
+        NIXL_DEBUG << "Rail " << rail_id << " was already active";
     }
 }
 
@@ -876,7 +876,7 @@ nixlLibfabricRailManager::markRailInactive(size_t rail_id) {
         NIXL_DEBUG << "Marked rail " << rail_id
                    << " as inactive (total active: " << active_rails_.size() << ")";
     } else {
-        NIXL_TRACE << "Rail " << rail_id << " was not in active set";
+        NIXL_DEBUG << "Rail " << rail_id << " was not in active set";
     }
 }
 

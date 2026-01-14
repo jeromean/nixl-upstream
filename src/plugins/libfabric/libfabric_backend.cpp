@@ -840,7 +840,7 @@ nixlLibfabricEngine::registerMem(const nixlBlobDesc &mem,
     }
 
     // Use Rail Manager for centralized memory registration with GPU Direct RDMA support
-    NIXL_TRACE << "Registering memory: addr=" << (void *)mem.addr << " len=" << mem.len
+    NIXL_DEBUG << "Registering memory: addr=" << (void *)mem.addr << " len=" << mem.len
                << " mem_type=" << nixl_mem << " devId=" << mem.devId
                << " hmem_hint=" << (hmem_hint.empty() ? "auto" : hmem_hint);
 
@@ -1451,7 +1451,7 @@ nixlLibfabricEngine::processNotification(const std::string &serialized_notif) {
     uint16_t xfer_id = binary_notif->xfer_id;
     uint32_t expected_completions = binary_notif->expected_completions;
 
-    NIXL_TRACE << "Received notification from " << remote_name << " msg: " << msg
+    NIXL_DEBUG << "Received notification from " << remote_name << " msg: " << msg
                << " xfer_id: " << xfer_id << " expected_completions: " << expected_completions;
 
     // Check if this is a transfer notification that needs completions matching
@@ -1490,10 +1490,10 @@ nixlLibfabricEngine::processNotification(const std::string &serialized_notif) {
         checkPendingNotifications();
     } else {
         // Regular notification without expected completions - process immediately
-        NIXL_TRACE << "Regular notification (expected_completions=0), processing immediately";
+        NIXL_DEBUG << "Regular notification (expected_completions=0), processing immediately";
         std::lock_guard<std::mutex> lock(notif_mutex_);
         notifMainList_.push_back({remote_name, msg});
-        NIXL_TRACE << "Regular notification processed immediately: " << msg;
+        NIXL_DEBUG << "Regular notification processed immediately: " << msg;
     }
 }
 
@@ -1636,7 +1636,7 @@ nixlLibfabricEngine::checkPendingNotifications() {
         // Check if transfer is complete by checking if all the remote completions for
         // the xfer_id are received.
         if (it->second.received_completions >= it->second.expected_completions) {
-            NIXL_TRACE << "Received all remote completions for queued notification, processing now";
+            NIXL_DEBUG << "Received all remote completions for queued notification, processing now";
 
             // Move notification to main list (need to acquire notif_mutex_)
             {
@@ -1644,7 +1644,7 @@ nixlLibfabricEngine::checkPendingNotifications() {
                 notifMainList_.push_back({it->second.remote_agent, it->second.message});
             }
 
-            NIXL_TRACE << "Processed queued notification: " << it->second.message;
+            NIXL_DEBUG << "Processed queued notification: " << it->second.message;
 
             // Remove from pending list
             it = pending_notifications_.erase(it);

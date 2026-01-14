@@ -99,7 +99,7 @@ nixlXferReqH::updateRequestStats(std::unique_ptr<nixlTelemetry> &telemetry_pub,
         telemetry_pub->addXferTime(duration, backendOp == NIXL_WRITE, telemetry.totalBytes);
     }
 
-    NIXL_TRACE << "[NIXL TELEMETRY]: From backend " << engine->getType()
+    NIXL_DEBUG << "[NIXL TELEMETRY]: From backend " << engine->getType()
                << nixl_post_status_str[stat_status] << " Xfer with " << telemetry.descCount
                << " descriptors of total size " << telemetry.totalBytes << "B in "
                << duration.count() << "us.";
