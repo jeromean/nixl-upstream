@@ -198,6 +198,9 @@ getAvailableNetworkDevices() {
             // If this PCI address isn't in our map yet, add it.
             // This effectively keeps the FIRST provider/configuration found for this NIC.
             if (unique_map.find(pci_key) == unique_map.end()) {
+                    NIXL_DEBUG << "FILTERED : Found device - domain: " << curr->nic->device_attr->name
+                       << ", provider: " << curr->fabric_attr->prov_name << ", ep_type: " << curr->ep_attr->type
+                       << ", caps: 0x" << std::hex << curr->caps << std::dec;
                 unique_map[pci_key] = {
                     curr->nic->device_attr->name,       // e.g., "mlx5_0"
                     curr->fabric_attr->prov_name,      // e.g., "verbs"
