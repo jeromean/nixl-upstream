@@ -173,16 +173,18 @@ getAvailableNetworkDevices() {
                 provider_device_map[provider_name] = {};
             }
             provider_device_map[provider_name].push_back(device_name);
-            if (provider_name == "mlx5_0")
-            {
-                NIXL_DEBUG << "*** BREAKING at mlx5_0";
-                break;
-            }
         }
     }
 
     fi_freeinfo(info);
     fi_freeinfo(hints);
+
+    // remove duplicates
+    for (auto& [key, vec] : provider_device_map) {
+        std::sort(vec.begin(), vec.end());
+        auto last = std::unique(vec.begin(), vec.end());
+        vec.erase(last, vec.end());
+    }
 
     for (auto device_list : provider_device_map) {
         for (auto device : device_list.second) {
