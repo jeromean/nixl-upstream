@@ -106,6 +106,9 @@ configureHintsForProvider(struct fi_info* hints, const std::string& provider_nam
     hints->mode = config->mode;
     hints->ep_attr->type = FI_EP_RDM;
 
+    hints->addr_format = FI_SOCKADDR_IN;
+    NIXL_DEBUG << "-----hints->addr_format'" << hints->addr_format;
+
     if (config->resource_mgmt != FI_RM_UNSPEC) {
         hints->domain_attr->resource_mgmt = config->resource_mgmt;
     }
