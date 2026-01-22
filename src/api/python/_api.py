@@ -178,7 +178,7 @@ class nixl_agent:
             nixl_conf = nixl_agent_config()  # Using defaults set in nixl_agent_config
 
         thread_config = (
-            nixlBind.NIXL_THREAD_SYNC_STRICT
+            nixlBind.NIXL_THREAD_SYNC_RW
             if nixl_conf.enable_listen
             else nixlBind.NIXL_THREAD_SYNC_NONE
         )
@@ -189,7 +189,7 @@ class nixl_agent:
             nixl_conf.enable_listen,
             nixl_conf.port,
             thread_config,
-            1,
+            4,
             0,
             100000,
             nixl_conf.capture_telemetry,
