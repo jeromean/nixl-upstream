@@ -25,10 +25,6 @@
 #include <cstring>
 #include <fstream>
 #include <algorithm>
-#include <map>
-#include <string>
-#include <tuple>
-
 
 #include <rdma/fabric.h>
 #include <rdma/fi_domain.h>
@@ -162,7 +158,6 @@ getAvailableNetworkDevices() {
     }
 
     // Process devices for this provider
-    #if 0
     for (struct fi_info *cur = info; cur; cur = cur->next) {
         if (cur->domain_attr && cur->domain_attr->name && cur->fabric_attr &&
             cur->fabric_attr->name) {
@@ -178,39 +173,13 @@ getAvailableNetworkDevices() {
                 provider_device_map[provider_name] = {};
             }
             provider_device_map[provider_name].push_back(device_name);
-        }
-    }
-    #else
-    struct NicMetadata {
-        std::string device_name;
-        std::string provider_name;
-        struct fi_info* info_ptr; // Reference to the original entry
-    };
-    std::map<std::tuple<uint32_t, uint8_t, uint8_t, uint8_t>, NicMetadata> unique_map;
-
-    for (struct fi_info* curr = info; curr != nullptr; curr = curr->next) {
-        // Filter by PCI bus type to ensure physical uniqueness
-        if (curr->nic && curr->nic->bus_attr->bus_type == FI_BUS_PCI) {
-            auto& pci = curr->nic->bus_attr->attr.pci;
-            auto pci_key = std::make_tuple(pci.domain_id, pci.bus_id,
-                                           pci.device_id, pci.function_id);
-
-            // If this PCI address isn't in our map yet, add it.
-            // This effectively keeps the FIRST provider/configuration found for this NIC.
-            if (unique_map.find(pci_key) == unique_map.end()) {
-                    NIXL_DEBUG << "FILTERED : Found device - domain: " << curr->nic->device_attr->name
-                       << ", provider: " << curr->fabric_attr->prov_name << ", ep_type: " << curr->ep_attr->type
-                       << ", caps: 0x" << std::hex << curr->caps << std::dec;
-                unique_map[pci_key] = {
-                    curr->nic->device_attr->name,       // e.g., "mlx5_0"
-                    curr->fabric_attr->prov_name,      // e.g., "verbs"
-                    curr
-                };
-            provider_device_map[curr->fabric_attr->prov_name].push_back(curr->nic->device_attr->name);
+            if (provider_name == "mlx5_0")
+            {
+                NIXL_DEBUG << "*** BREAKING at mlx5_0";
+                break;
             }
         }
     }
-    #endif
 
     fi_freeinfo(info);
     fi_freeinfo(hints);
